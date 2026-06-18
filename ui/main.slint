@@ -1,0 +1,60 @@
+import { Button, VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "Rust Audio Player";
+    // width: 400px;
+    // height: 300px;
+
+    in property <string> current-state: "Ready to play";
+    in property <string> current-timestamp: "0:00";
+
+    in property <image> play-icon: @image-url("assets/icons/play-icon.svg");
+    in property <image> pause-icon: @image-url("assets/icons/pause-icon.svg");
+    in property <image> clear-icon: @image-url("assets/icons/stop-icon.svg");
+    in property <image> files-icon: @image-url("assets/icons/files-icon.svg");
+
+    callback play-clicked();
+    callback pause-clicked();
+    callback clear-clicked();
+    callback file-picker();
+
+    VerticalLayout {
+        alignment: center;
+
+        Text {
+            text: root.current-state;
+            font-size: 24px;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: root.current-timestamp;
+            font-size: 16px;
+            horizontal-alignment: center;
+        }
+
+        HorizontalBox {
+            alignment: center;
+            Button {
+                text: "Play";
+                clicked => { root.play-clicked() }
+                icon: play-icon;
+            }
+            Button {
+                text: "Pause";
+                clicked => { root.pause-clicked() }
+                icon: pause-icon;
+            }
+            Button {
+                text: "Clear";
+                clicked => { root.clear-clicked() }
+                icon: clear-icon;
+            }
+            Button {
+                text: "Choose file";
+                clicked => { root.file-picker() }
+                icon: files-icon;
+            }
+        }
+    }
+}
