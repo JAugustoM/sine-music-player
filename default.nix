@@ -4,7 +4,12 @@
   alsa-lib,
   cmake,
   fontconfig,
+  libGL,
+  libxkbcommon,
+  makeWrapper,
   pkg-config,
+  vulkan-loader,
+  wayland,
 }:
 let
   manifest = (lib.importTOML ./Cargo.toml).package;
@@ -17,13 +22,28 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   nativeBuildInputs = [
     cmake
+    makeWrapper
     pkg-config
   ];
 
   buildInputs = [
     alsa-lib
     fontconfig
+    libxkbcommon
+    wayland
   ];
+
+  postInstall = ''
+    wrapProgram $out/bin/${manifest.name} \
+      --prefix LD_LIBRARY_PATH : ${
+        lib.makeLibraryPath [
+          libGL
+          vulkan-loader
+          wayland
+          libxkbcommon
+        ]
+      }
+  '';
 
   cargoLock = {
     lockFile = ./Cargo.lock;
@@ -34,7 +54,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   meta = {
     description = "A music player made with Rust + Slint";
-    homepage = "";
+    homepage = "https://github.com/JAugustoM/sine-music-player";
     license = lib.licenses.unlicense;
     maintainers = [ ];
   };
