@@ -1,15 +1,21 @@
 pub enum PlayerCommands {
+    Add(std::path::PathBuf),
     Clear,
     Load(std::path::PathBuf),
-    Pause,
-    Play,
-    Stop,
+    ToggleReproduction,
+    ToggleRepeat,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum EngineState {
     Empty,
-    New,
     Paused,
     Playing,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub enum RepeatMode {
+    Off,
+    Track,
+    Playlist,
 }

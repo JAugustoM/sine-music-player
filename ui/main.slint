@@ -1,22 +1,17 @@
-import { Button, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, ProgressIndicator } from "std-widgets.slint";
+import { Icons } from "assets/icons/icons.slint";
 
 export component AppWindow inherits Window {
-    title: "Rust Audio Player";
-    // width: 400px;
-    // height: 300px;
+    title: "Sine Music Player";
 
     in property <string> current-state: "Ready to play";
-    in property <string> current-timestamp: "0:00";
+    in property <string> current-timestamp: "00:00";
+    in property <string> music-duration: "00:00";
+    in property <float> music-progress: 0;
 
-    in property <image> play-icon: @image-url("assets/icons/play-icon.svg");
-    in property <image> pause-icon: @image-url("assets/icons/pause-icon.svg");
-    in property <image> clear-icon: @image-url("assets/icons/stop-icon.svg");
-    in property <image> files-icon: @image-url("assets/icons/files-icon.svg");
-
-    callback play-clicked();
-    callback pause-clicked();
-    callback clear-clicked();
-    callback file-picker();
+    callback toggle-clicked <=> toggle-button.clicked;
+    callback clear-clicked <=> clear-button.clicked;
+    callback file-picker <=> file-picker.clicked;
 
     VerticalLayout {
         alignment: center;
@@ -28,32 +23,28 @@ export component AppWindow inherits Window {
         }
 
         Text {
-            text: root.current-timestamp;
+            text: root.current-timestamp + "/" + root.music-duration;
             font-size: 16px;
             horizontal-alignment: center;
         }
 
+        VerticalBox {
+            max-width: 360px;
+            ProgressIndicator {
+                progress: music-progress;
+            }
+        }
+
         HorizontalBox {
             alignment: center;
-            Button {
-                text: "Play";
-                clicked => { root.play-clicked() }
-                icon: play-icon;
+            toggle-button := Button {
+                icon: root.current-state == "Playing" ? Icons.pause : Icons.play;
             }
-            Button {
-                text: "Pause";
-                clicked => { root.pause-clicked() }
-                icon: pause-icon;
+            clear-button := Button {
+                icon: Icons.clear;
             }
-            Button {
-                text: "Clear";
-                clicked => { root.clear-clicked() }
-                icon: clear-icon;
-            }
-            Button {
-                text: "Choose file";
-                clicked => { root.file-picker() }
-                icon: files-icon;
+            file-picker := Button {
+                icon: Icons.files;
             }
         }
     }

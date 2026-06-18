@@ -3,7 +3,7 @@ mod audio_engine;
 use audio_engine::AudioEngine;
 use audio_engine::enums::*;
 
-use std::path::PathBuf;
+use core::time;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
@@ -26,13 +26,8 @@ fn main() -> Result<(), slint::PlatformError> {
     AudioEngine::new(&handle, command_rx, status_sx).start();
 
     let tx = command_sx.clone();
-    main_window.on_play_clicked(move || {
-        tx.send(PlayerCommands::Play).unwrap();
-    });
-
-    let tx = command_sx.clone();
-    main_window.on_pause_clicked(move || {
-        tx.send(PlayerCommands::Pause).unwrap();
+    main_window.on_toggle_clicked(move || {
+        tx.send(PlayerCommands::ToggleReproduction).unwrap();
     });
 
     let tx = command_sx.clone();
@@ -42,13 +37,17 @@ fn main() -> Result<(), slint::PlatformError> {
 
     let tx = command_sx.clone();
     main_window.on_file_picker(move || {
-        let file = FileDialog::new()
-            .add_filter("Music files", &["opus", "mp3"])
-            .pick_file();
+        let tx = tx.clone();
+        thread::spawn(move || {
+            let mut dialog = FileDialog::new().add_filter("Music files", &["opus", "mp3"]);
+            if let Some(path) = dirs::audio_dir().or_else(|| dirs::home_dir()) {
+                dialog = dialog.set_directory(path);
+            }
 
-        if let Some(file) = file {
-            tx.send(PlayerCommands::Load(file)).unwrap();
-        };
+            if let Some(file) = dialog.pick_file() {
+                tx.send(PlayerCommands::Add(file)).unwrap();
+            };
+        });
     });
 
     let app = main_window.as_weak();
@@ -65,23 +64,27 @@ fn main() -> Result<(), slint::PlatformError> {
                 let app_clone = app.clone();
 
                 let state_str = match status.state {
-                    EngineState::Empty => "No queue",
-                    EngineState::New => "No music added",
+                    EngineState::Empty => "No music on queue",
                     EngineState::Paused => "Paused",
                     EngineState::Playing => "Playing",
                 };
 
-                let time_str = if let Some(t) = status.timestamp {
-                    let secs = t.as_secs();
-                    format!("{}:{:02}", secs / 60, secs % 60)
-                } else {
-                    "00:00".to_string()
-                };
+                let current_track = status.current_track;
+                let music = status.playlist.get(current_track);
+
+                let timestamp = status.timestamp.map_or_else(|| 0, |t| t.as_secs());
+                let duration = music.map_or_else(|| 0, |m| m.length.as_secs());
+
+                let time_str = format!("{}:{:02}", timestamp / 60, timestamp % 60);
+                let duration_str = format!("{}:{:02}", duration / 60, duration % 60);
+                let music_progress: f32 = timestamp as f32 / duration as f32;
 
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(app) = app_clone.upgrade() {
-                        app.set_current_timestamp(time_str.into());
                         app.set_current_state(state_str.into());
+                        app.set_current_timestamp(time_str.into());
+                        app.set_music_duration(duration_str.into());
+                        app.set_music_progress(music_progress);
                     }
                 });
             }

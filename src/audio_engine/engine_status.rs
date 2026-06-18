@@ -1,26 +1,27 @@
-use super::MusicData;
+use super::Music;
 use super::enums::EngineState;
+use super::enums::RepeatMode;
 
 use std::time::Duration;
 
 #[derive(Clone)]
 pub struct EngineStatus {
-    pub current_music: Option<MusicData>,
     pub timestamp: Option<Duration>,
     pub state: EngineState,
-    pub current_track: u32,
-    pub music_queue: Vec<MusicData>,
+    pub current_track: usize,
+    pub playlist: Vec<Music>,
+    pub repeat: RepeatMode,
 }
 
 impl EngineStatus {
     pub fn new() -> Self {
-        let music_queue: Vec<MusicData> = Vec::new();
+        let playlist: Vec<Music> = Vec::new();
         EngineStatus {
-            current_music: None,
             timestamp: None,
-            state: EngineState::New,
+            state: EngineState::Empty,
             current_track: 0,
-            music_queue,
+            playlist,
+            repeat: RepeatMode::Off,
         }
     }
 }
