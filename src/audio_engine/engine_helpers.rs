@@ -1,6 +1,6 @@
 use super::AudioEngine;
 use super::Music;
-use super::enums::*;
+use super::engine_enums::*;
 
 impl AudioEngine {
     pub fn current_track(&self) -> &usize {

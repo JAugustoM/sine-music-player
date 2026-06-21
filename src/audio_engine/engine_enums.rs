@@ -1,9 +1,11 @@
 pub enum PlayerCommands {
     Add(std::path::PathBuf),
     Clear,
-    Load(std::path::PathBuf),
     ToggleReproduction,
     ToggleRepeat,
+    SkipNext,
+    SkipPrevious,
+    Seek(std::time::Duration),
 }
 
 #[derive(Clone, PartialEq, Eq)]

@@ -1,6 +1,6 @@
 use super::Music;
-use super::enums::EngineState;
-use super::enums::RepeatMode;
+use super::engine_enums::EngineState;
+use super::engine_enums::RepeatMode;
 
 use std::time::Duration;
 

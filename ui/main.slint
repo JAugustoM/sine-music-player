@@ -1,17 +1,33 @@
-import { Button, VerticalBox, HorizontalBox, ProgressIndicator } from "std-widgets.slint";
-import { Icons } from "assets/icons/icons.slint";
+import { Button, VerticalBox, HorizontalBox, Slider } from "std-widgets.slint";
+import { Icons } from "assets/icons.slint";
 
 export component AppWindow inherits Window {
     title: "Sine Music Player";
 
+    in property <string> music-title: "";
+    in property <string> music-album: "";
+    in property <string> music-album-artist: "";
+
     in property <string> current-state: "Ready to play";
+
     in property <string> current-timestamp: "00:00";
-    in property <string> music-duration: "00:00";
-    in property <float> music-progress: 0;
+    in property <string> music-length: "00:00";
+
+    in-out property <float> music-progress: 0;
+    in property <int> music-duration: 0;
+
+    in property <string> repeat-mode: "Off";
 
     callback toggle-clicked <=> toggle-button.clicked;
     callback clear-clicked <=> clear-button.clicked;
     callback file-picker <=> file-picker.clicked;
+
+    callback previous-button <=> previous-button.clicked;
+    callback next-button <=> next-button.clicked;
+
+    callback toggle-repeat <=> repeat-button.clicked;
+
+    callback set-timestamp(float);
 
     VerticalLayout {
         alignment: center;
@@ -23,28 +39,54 @@ export component AppWindow inherits Window {
         }
 
         Text {
-            text: root.current-timestamp + "/" + root.music-duration;
+            text: "\{music-title} - \{music-album} - \{music-album-artist}";
             font-size: 16px;
             horizontal-alignment: center;
         }
 
-        VerticalBox {
-            max-width: 360px;
-            ProgressIndicator {
-                progress: music-progress;
+        Text {
+            text: root.current-timestamp + "/" + root.music-length;
+            font-size: 16px;
+            horizontal-alignment: center;
+        }
+
+        Slider {
+            enabled: self.minimum != self.maximum ? true : false;
+            minimum: 0;
+            value <=> music-progress;
+            maximum: music-duration;
+            changed(value) => {
+                set-timestamp(value);
+            };
+            released(value) => {
+                self.clear-focus();
             }
         }
 
         HorizontalBox {
             alignment: center;
+            previous-button := Button {
+                icon: Icons.skip-previous;
+            }
+
+            file-picker := Button {
+                icon: Icons.files;
+            }
+
             toggle-button := Button {
                 icon: root.current-state == "Playing" ? Icons.pause : Icons.play;
             }
+
             clear-button := Button {
                 icon: Icons.clear;
             }
-            file-picker := Button {
-                icon: Icons.files;
+
+            repeat-button := Button {
+                icon: root.repeat-mode == "Track" ? Icons.repeat_one : root.repeat-mode == "Playlist" ? Icons.repeat_on : Icons.repeat_off;
+            }
+
+            next-button := Button {
+                icon: Icons.skip-next;
             }
         }
     }

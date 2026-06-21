@@ -1,21 +1,19 @@
+pub mod engine_commands;
+pub mod engine_enums;
 pub mod engine_status;
-pub mod enums;
 pub mod music;
 
 mod engine_helpers;
 
+use engine_enums::*;
 use engine_status::EngineStatus;
-use enums::*;
 use music::Music;
 
-use anyhow::Result;
-use rodio::{Decoder, MixerDeviceSink, Player};
-use std::fs::File;
-use std::io::BufReader;
-use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 use std::time::Duration;
+
+use rodio::{MixerDeviceSink, Player};
 
 pub struct AudioEngine {
     player: Player,
@@ -45,7 +43,27 @@ impl AudioEngine {
         thread::spawn(move || {
             loop {
                 match self.command_rx.try_recv() {
-                    Ok(command) => self.handle_command(command),
+                    Ok(command) => {
+                        let mut latest_seek = None;
+
+                        if let PlayerCommands::Seek(dur) = command {
+                            latest_seek = Some(dur);
+                        } else {
+                            self.handle_command(command);
+                        }
+
+                        while let Ok(cmd) = self.command_rx.try_recv() {
+                            if let PlayerCommands::Seek(dur) = cmd {
+                                latest_seek = Some(dur);
+                            } else {
+                                self.handle_command(cmd);
+                            }
+                        }
+
+                        if let Some(dur) = latest_seek {
+                            self.handle_command(PlayerCommands::Seek(dur));
+                        }
+                    }
                     Err(mpsc::TryRecvError::Empty) => {
                         if self.player.empty() && *self.state() == EngineState::Playing {
                             match self.repeat() {
@@ -85,72 +103,12 @@ impl AudioEngine {
     fn handle_command(&mut self, command: PlayerCommands) {
         match command {
             PlayerCommands::Add(path) => self.add_music(path),
-            PlayerCommands::Clear => {
-                self.player.clear();
-                self.status.playlist.clear();
-                self.status.state = EngineState::Empty;
-                self.status.timestamp = None;
-            }
-            PlayerCommands::Load(path) => {
-                if let Err(e) = self.load_file(&path) {
-                    println!("Failed to load file {e}");
-                }
-            }
+            PlayerCommands::Clear => self.clear_music(),
             PlayerCommands::ToggleReproduction => self.toggle_reproduction(),
-            PlayerCommands::ToggleRepeat => match self.status.repeat {
-                RepeatMode::Off => self.status.repeat = RepeatMode::Track,
-                RepeatMode::Track => self.status.repeat = RepeatMode::Playlist,
-                RepeatMode::Playlist => self.status.repeat = RepeatMode::Off,
-            },
+            PlayerCommands::ToggleRepeat => self.toggle_repeat(),
+            PlayerCommands::SkipPrevious => self.skip_previous(),
+            PlayerCommands::SkipNext => self.skip_next(),
+            PlayerCommands::Seek(duration) => self.seek(duration),
         }
-    }
-
-    fn add_music(&mut self, path: PathBuf) {
-        let music = Music::new(path);
-
-        match music {
-            Ok(music) => self.status.playlist.push(music),
-            Err(e) => {
-                println!("{e}");
-                return;
-            }
-        }
-
-        if *self.state() == EngineState::Empty {
-            self.status.state = EngineState::Paused;
-        }
-    }
-
-    fn toggle_reproduction(&mut self) {
-        match self.status.state {
-            EngineState::Empty => return,
-            EngineState::Playing => {
-                self.player.pause();
-                self.status.state = EngineState::Paused;
-            }
-            EngineState::Paused => self.play_music(),
-        }
-    }
-
-    fn play_music(&mut self) {
-        let index = self.status.current_track;
-
-        let music = &self.status.playlist[index];
-
-        if let Ok(()) = self.load_file(&music.path) {
-            self.player.play();
-            self.status.state = EngineState::Playing;
-        }
-    }
-
-    fn load_file(&self, path: &PathBuf) -> Result<()> {
-        let file = File::open(path)?;
-        println!("{:?}", path.file_name());
-        let buffer = BufReader::new(file);
-        let source = Decoder::try_from(buffer)?;
-
-        self.player.append(source);
-
-        Ok(())
     }
 }
