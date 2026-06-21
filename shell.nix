@@ -1,17 +1,11 @@
-{
-  pkgs,
-  lib,
-  config,
-  inputs,
-  ...
-}:
-
-{
+{ pkgs, lib, ... }:
+pkgs.mkShell {
   packages = with pkgs; [
     alsa-lib
     cmake
     dbus
     gcc
+    pkg-config
 
     #Slint
     fontconfig
@@ -24,7 +18,7 @@
     libXi
   ];
 
-  env.LD_LIBRARY_PATH = "${
+  LD_LIBRARY_PATH = "${
     lib.makeLibraryPath (
       with pkgs;
       [
@@ -38,5 +32,5 @@
         wayland
       ]
     )
-  }:$LD_LIBRARY_PATH";
+  }:LD_LIBRARY_PATH";
 }
