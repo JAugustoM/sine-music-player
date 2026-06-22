@@ -1,6 +1,6 @@
 use std::{path::PathBuf, time::Duration};
 
-use anyhow::{Error, Result};
+use anyhow::{Context};
 use lofty::prelude::*;
 use lofty::probe::Probe;
 
@@ -15,12 +15,9 @@ pub struct Music {
 }
 
 impl Music {
-    pub fn new(path: PathBuf) -> Result<Self> {
+    pub fn new(path: PathBuf) -> anyhow::Result<Self> {
         let probe = Probe::open(&path)?;
-        let tag_file = match probe.read() {
-            Ok(t) => t,
-            Err(e) => return Err(Error::new(e)),
-        };
+        let tag_file =  probe.read().with_context(|| format!("Failed to read metadata from {:?}", path.file_name()))?;
 
         let properties = tag_file.properties();
         let length = properties.duration();

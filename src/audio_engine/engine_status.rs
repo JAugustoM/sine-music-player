@@ -11,6 +11,7 @@ pub struct EngineStatus {
     pub current_track: usize,
     pub playlist: Vec<Music>,
     pub repeat: RepeatMode,
+    pub error: Option<String>
 }
 
 impl EngineStatus {
@@ -22,6 +23,7 @@ impl EngineStatus {
             current_track: 0,
             playlist,
             repeat: RepeatMode::Off,
+            error: None,
         }
     }
 }

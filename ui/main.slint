@@ -1,12 +1,11 @@
 import { Button, VerticalBox, HorizontalBox, Slider } from "std-widgets.slint";
 import { Icons } from "assets/icons.slint";
+// import { Slider } from "@material";
 
 export component AppWindow inherits Window {
     title: "Sine Music Player";
 
-    in property <string> music-title: "";
-    in property <string> music-album: "";
-    in property <string> music-album-artist: "";
+    in property <string> song-details: "";
 
     in property <string> current-state: "Ready to play";
 
@@ -16,7 +15,7 @@ export component AppWindow inherits Window {
     in-out property <float> music-progress: 0;
     in property <int> music-duration: 0;
 
-    in property <string> repeat-mode: "Off";
+    in property <int> repeat-mode: 0;
 
     callback toggle-clicked <=> toggle-button.clicked;
     callback clear-clicked <=> clear-button.clicked;
@@ -39,7 +38,7 @@ export component AppWindow inherits Window {
         }
 
         Text {
-            text: "\{music-title} - \{music-album} - \{music-album-artist}";
+            text: root.song-details;
             font-size: 16px;
             horizontal-alignment: center;
         }
@@ -82,7 +81,7 @@ export component AppWindow inherits Window {
             }
 
             repeat-button := Button {
-                icon: root.repeat-mode == "Track" ? Icons.repeat_one : root.repeat-mode == "Playlist" ? Icons.repeat_on : Icons.repeat_off;
+                icon: root.repeat-mode == 1 ? Icons.repeat_one : root.repeat-mode == 2 ? Icons.repeat_on : Icons.repeat_off;
             }
 
             next-button := Button {

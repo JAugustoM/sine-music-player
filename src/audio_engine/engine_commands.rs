@@ -7,20 +7,20 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::Context;
 use rodio::Decoder;
 
 impl AudioEngine {
     pub fn add_music(&mut self, path: PathBuf) {
-        let music = Music::new(path.clone());
-
-        match music {
-            Ok(music) => self.status.playlist.push(music),
+        let music = match Music::new(path.clone()) {
+            Ok(m) => m,
             Err(e) => {
-                println!("{e}");
+                self.status.error = Some(e.to_string());
                 return;
             }
-        }
+        };
+
+        self.status.playlist.push(music);
 
         if *self.state() == EngineState::Empty {
             self.play_music();
@@ -49,7 +49,7 @@ impl AudioEngine {
         }
     }
 
-    pub fn toggle_repeat(&mut self) {
+    pub fn toggle_repeat(&mut self){
         match self.status.repeat {
             RepeatMode::Off => self.status.repeat = RepeatMode::Track,
             RepeatMode::Track => self.status.repeat = RepeatMode::Playlist,
@@ -62,12 +62,18 @@ impl AudioEngine {
 
         let music = &self.status.playlist[index];
 
-        if let Ok(source) = self.load_file(&music.path) {
-            self.player.clear();
-            self.player.append(source);
-            self.player.play();
-            self.status.state = EngineState::Playing;
-        }
+        let source = match self.load_file(&music.path) {
+            Ok(s) => s,
+            Err(e) => {
+                self.status.error = Some(e.to_string());
+                return;
+            }
+        };
+
+        self.player.clear();
+        self.player.append(source);
+        self.player.play();
+        self.status.state = EngineState::Playing;
     }
 
     pub fn skip_next(&mut self) {
@@ -80,6 +86,9 @@ impl AudioEngine {
 
         if *track_id < playlist.len() - 1 {
             self.status.current_track += 1;
+            self.play_music();
+        } else if *self.repeat() == RepeatMode::Playlist {
+            self.status.current_track = 0;
             self.play_music();
         }
     }
@@ -95,6 +104,9 @@ impl AudioEngine {
         if *track_id > 0 {
             self.status.current_track -= 1;
             self.play_music();
+        } else if *self.repeat() == RepeatMode::Playlist {
+            self.status.current_track = self.playlist().len() - 1;
+            self.play_music();
         }
     }
 
@@ -108,34 +120,40 @@ impl AudioEngine {
         let index = *self.current_track();
         let music = &playlist[index];
 
-        if let Ok(source) = self.load_file(&music.path) {
-            let was_playing = *self.state() == EngineState::Playing;
-
-            self.player.clear();
-
-            self.player.append(source);
-            std::thread::sleep(std::time::Duration::from_millis(50));
-
-            if let Err(e) = self.player.try_seek(duration) {
-                println!("Failed to seek: {e}");
+        let source = match self.load_file(&music.path) {
+            Ok(s) => s,
+            Err(e) => {
+                self.status.error = Some(e.to_string());
+                return;
             }
+        };
 
-            if was_playing {
-                self.player.play();
-            } else {
-                self.player.pause();
-            }
+        let was_playing = *self.state() == EngineState::Playing;
 
-            self.status.timestamp = Some(duration);
+        self.player.clear();
+
+        self.player.append(source);
+        std::thread::sleep(std::time::Duration::from_millis(50));
+
+        if let Err(e) = self.player.try_seek(duration).context("Failed to seek music") {
+            self.status.error = Some(e.to_string());
+        }
+
+        if was_playing {
+            self.player.play();
+        } else {
+            self.player.pause();
         }
     }
 
-    pub fn load_file(&self, path: &PathBuf) -> Result<Decoder<BufReader<File>>> {
-        let file = File::open(path)?;
-        println!("{:?}", path.file_name());
+    pub fn load_file(&self, path: &PathBuf) -> anyhow::Result<Decoder<BufReader<File>>> {
+        let file = File::open(&path)
+            .with_context(|| format!("Failed to read file {:?}", path.file_name()))?;
+
         let buffer = BufReader::new(file);
 
-        let source = Decoder::try_from(buffer)?;
+        let source = Decoder::try_from(buffer)
+            .with_context(|| format!("Failed to decode file {:?}", path.file_name()))?;
 
         Ok(source)
     }
