@@ -3,6 +3,7 @@
   rustPlatform,
   alsa-lib,
   cmake,
+  dbus,
   fontconfig,
   libGL,
   libxkbcommon,
@@ -37,10 +38,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
     wrapProgram $out/bin/${manifest.name} \
       --prefix LD_LIBRARY_PATH : ${
         lib.makeLibraryPath [
+          dbus
           libGL
+          libxkbcommon
           vulkan-loader
           wayland
-          libxkbcommon
         ]
       }
   '';
