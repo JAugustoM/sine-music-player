@@ -2,6 +2,7 @@
 name = "sine-music-player"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
 anyhow = "1.0.102"
@@ -9,8 +10,9 @@ dirs = "6.0.0"
 image = "0.25.10"
 lofty = "0.24.0"
 rfd = "0.17.2"
-rodio = { git="https://github.com/RustAudio/rodio", rev="ee3c21f", features=["symphonia-libopus"]}
+rodio = { git = "https://github.com/RustAudio/rodio", rev = "ee3c21f", features = ["symphonia-libopus"] }
 slint = "1.16.1"
+walkdir = "2.5.0"
 
 [build-dependencies]
 slint-build = "1.16.1"

@@ -6,6 +6,7 @@ use audio_engine::AudioEngine;
 use audio_engine::engine_enums::EngineState;
 use callbacks::setup_callbacks;
 use helpers::{heavy_extract, light_extract};
+use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 
 use std::sync::mpsc;
 use std::thread;
@@ -36,13 +37,15 @@ fn main() -> Result<(), slint::PlatformError> {
 
         loop {
             let mut latest_status = None;
+            let mut latest_error = None;
 
             while let Ok(status) = status_rx.try_recv() {
+                latest_error = status.error.clone();
                 latest_status = Some(status);
             }
 
             if let Some(status) = latest_status {
-                if let Some(error) = &status.error {
+                if let Some(error) = latest_error {
                     println!("{error}");
                 }
 
@@ -65,38 +68,38 @@ fn main() -> Result<(), slint::PlatformError> {
 
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(app) = app_clone.upgrade() {
-                        app.set_current_state(extract.state.into());
-                        app.set_current_timestamp(extract.timestamp.into());
-                        app.set_music_progress(extract.music_progress);
-                        app.set_repeat_mode(extract.repeat.into());
+                        let state = app.global::<MusicControl>();
+
+                        state.set_current_state(extract.state.into());
+                        state.set_current_timestamp(extract.timestamp.into());
+                        state.set_music_progress(extract.music_progress);
+                        state.set_repeat_mode(extract.repeat.into());
 
                         if track_changed {
                             if let Some(metadata) = heavy_extract {
-                                app.set_final_timestamp(metadata.final_timestamp.into());
+                                state.set_final_timestamp(metadata.final_timestamp.into());
 
-                                app.set_music_title(metadata.music_title.into());
-                                app.set_music_album(metadata.music_album.into());
-                                app.set_music_album_artist(metadata.music_album_artist.into());
+                                state.set_music_title(metadata.music_title.into());
+                                state.set_music_album(metadata.music_album.into());
+                                state.set_music_album_artist(metadata.music_album_artist.into());
 
-                                app.set_music_duration(metadata.music_duration);
+                                state.set_music_duration(metadata.music_duration);
 
                                 if let Some(buffer) = metadata.cover {
-                                    app.set_cover_art(slint::Image::from_rgba8(buffer));
+                                    state.set_cover_art(Image::from_rgba8(buffer));
                                 } else {
-                                    let empty_buffer =
-                                        slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(1, 1);
-                                    app.set_cover_art(slint::Image::from_rgba8(empty_buffer));
+                                    let empty_buffer = SharedPixelBuffer::<Rgba8Pixel>::new(1, 1);
+                                    state.set_cover_art(Image::from_rgba8(empty_buffer));
                                 }
                             } else if is_empty {
-                                app.set_music_title("None".into());
-                                app.set_music_album("None".into());
-                                app.set_music_album_artist("None".into());
-                                app.set_music_duration(0.0);
-                                app.set_final_timestamp("0:00".into());
+                                state.set_music_title("None".into());
+                                state.set_music_album("None".into());
+                                state.set_music_album_artist("None".into());
+                                state.set_music_duration(0.0);
+                                state.set_final_timestamp("0:00".into());
 
-                                let empty =
-                                    slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(1, 1);
-                                app.set_cover_art(slint::Image::from_rgba8(empty));
+                                let empty = SharedPixelBuffer::<Rgba8Pixel>::new(1, 1);
+                                state.set_cover_art(Image::from_rgba8(empty));
                             }
                         }
                     }

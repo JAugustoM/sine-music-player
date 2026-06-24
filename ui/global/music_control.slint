@@ -1,0 +1,22 @@
+export global MusicControl {
+    in property <string> music-title: "";
+    in property <string> music-album: "";
+    in property <string> music-album-artist: "";
+
+    in property <string> current-state: "Paused";
+    in property <string> current-timestamp: "00:00";
+    in property <string> final-timestamp: "00:00";
+    in-out property <float> music-progress: 0;
+    in property <float> music-duration: 0;
+    in property <string> repeat-mode: "Off";
+    in property <image> cover-art;
+
+    callback toggle-clicked();
+    callback previous-button();
+    callback next-button();
+    callback toggle-repeat();
+    callback set-timestamp(float);
+
+    callback pick-music();
+    callback pick-folder();
+}

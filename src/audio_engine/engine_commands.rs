@@ -9,10 +9,26 @@ use std::time::Duration;
 
 use anyhow::Context;
 use rodio::Decoder;
+use walkdir::{DirEntry, WalkDir};
+
+const SUPPORTED_EXTENSIONS: &[&str] = &["opus", "mp3", "flac", "wav", "ogg", "m4a"];
+
+fn is_music_file(entry: &DirEntry) -> bool {
+    entry
+        .path()
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| {
+            SUPPORTED_EXTENSIONS
+                .iter()
+                .any(|&e| e.eq_ignore_ascii_case(ext))
+        })
+        .unwrap_or(false)
+}
 
 impl AudioEngine {
     pub fn add_music(&mut self, path: PathBuf) {
-        let music = match Music::new(path.clone()) {
+        let music = match Music::new(path) {
             Ok(m) => m,
             Err(e) => {
                 self.status.error = Some(e.to_string());
@@ -24,6 +40,14 @@ impl AudioEngine {
 
         if *self.state() == EngineState::Empty {
             self.play_music();
+        }
+    }
+
+    pub fn add_folder(&mut self, path: PathBuf) {
+        let walker = WalkDir::new(path).into_iter();
+        for entry in walker.filter_map(Result::ok).filter(|e| is_music_file(e)) {
+            let path = PathBuf::from(entry.path());
+            self.add_music(path);
         }
     }
 
@@ -49,7 +73,7 @@ impl AudioEngine {
         }
     }
 
-    pub fn toggle_repeat(&mut self){
+    pub fn toggle_repeat(&mut self) {
         match self.status.repeat {
             RepeatMode::Off => self.status.repeat = RepeatMode::Track,
             RepeatMode::Track => self.status.repeat = RepeatMode::Playlist,
@@ -135,7 +159,11 @@ impl AudioEngine {
         self.player.append(source);
         std::thread::sleep(std::time::Duration::from_millis(50));
 
-        if let Err(e) = self.player.try_seek(duration).context("Failed to seek music") {
+        if let Err(e) = self
+            .player
+            .try_seek(duration)
+            .context("Failed to seek music")
+        {
             self.status.error = Some(e.to_string());
         }
 

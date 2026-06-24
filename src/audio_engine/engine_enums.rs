@@ -1,5 +1,6 @@
 pub enum PlayerCommands {
     Add(std::path::PathBuf),
+    AddFolder(std::path::PathBuf),
     Clear,
     ToggleReproduction,
     ToggleRepeat,

@@ -1,6 +1,11 @@
 import { Button, HorizontalBox, VerticalBox, Slider } from "std-widgets.slint";
+import { IconButton } from "@material";
+
 import { Icons } from "assets/icons.slint";
 import { DraculaTheme } from "theme/dracula.slint";
+
+import { MusicControl } from "global/music_control.slint";
+export { MusicControl }
 
 export component AppWindow inherits Window {
     title: "Sine Music Player";
@@ -9,27 +14,7 @@ export component AppWindow inherits Window {
     preferred-height: 1080px;
     min-width: 800px;
     min-height: 600px;
-
     background: DraculaTheme.background;
-
-    in property <string> music-title: "";
-    in property <string> music-album: "";
-    in property <string> music-album-artist: "";
-
-    in property <string> current-state: "Paused";
-    in property <string> current-timestamp: "00:00";
-    in property <string> final-timestamp: "00:00";
-    in-out property <float> music-progress: 0;
-    in property <float> music-duration: 0;
-    in property <string> repeat-mode: "Off";
-    in property <image> cover-art;
-
-    callback toggle-clicked();
-    callback previous-button();
-    callback next-button();
-    callback toggle-repeat();
-    callback file-picker();
-    callback set-timestamp(float);
 
     VerticalLayout {
         Rectangle {
@@ -61,7 +46,7 @@ export component AppWindow inherits Window {
                         Image {
                             width: 100%;
                             height: 100%;
-                            source: root.cover-art;
+                            source: MusicControl.cover-art;
                             image-fit: cover;
                         }
                     }
@@ -71,7 +56,7 @@ export component AppWindow inherits Window {
                         spacing: 4px;
 
                         Text {
-                            text: root.music-title;
+                            text: MusicControl.music-title;
                             color: DraculaTheme.foreground;
                             font-size: 16px;
                             font-weight: 600;
@@ -79,7 +64,7 @@ export component AppWindow inherits Window {
                         }
 
                         Text {
-                            text: root.music-album-artist;
+                            text: MusicControl.music-album-artist;
                             color: DraculaTheme.purple;
                             font-size: 13px;
                             overflow: elide;
@@ -96,25 +81,28 @@ export component AppWindow inherits Window {
                         alignment: center;
                         spacing: 16px;
 
-                        Button {
+                        IconButton {
+                            icon: Icons.shuffle_off;
+                        }
+
+                        IconButton {
                             icon: Icons.skip-previous;
-                            clicked => {
-                                root.previous-button()
-                            }
+                            clicked => MusicControl.previous-button();
                         }
 
-                        Button {
-                            icon: root.current-state == "Playing" ? Icons.pause : Icons.play;
-                            clicked => {
-                                root.toggle-clicked()
-                            }
+                        IconButton {
+                            icon: MusicControl.current-state == "Playing" ? Icons.pause : Icons.play;
+                            clicked => MusicControl.toggle-clicked();
                         }
 
-                        Button {
+                        IconButton {
                             icon: Icons.skip-next;
-                            clicked => {
-                                root.next-button()
-                            }
+                            clicked => MusicControl.next-button();
+                        }
+
+                        IconButton {
+                            icon: MusicControl.repeat-mode == "Track" ? Icons.repeat_one : MusicControl.repeat-mode == "Playlist" ? Icons.repeat_on : Icons.repeat_off;
+                            clicked => MusicControl.toggle-repeat();
                         }
                     }
 
@@ -123,7 +111,7 @@ export component AppWindow inherits Window {
                         alignment: center;
 
                         Text {
-                            text: root.current-timestamp;
+                            text: MusicControl.current-timestamp;
                             color: DraculaTheme.foreground;
                             font-size: 12px;
                             vertical-alignment: center;
@@ -131,20 +119,17 @@ export component AppWindow inherits Window {
 
                         Slider {
                             minimum: 0;
-                            maximum: root.music-duration;
-                            min-width: 316px;
-                            value <=> root.music-progress;
+                            maximum: MusicControl.music-duration;
+                            horizontal-stretch: 1;
+                            preferred-width: 600px;
+                            value <=> MusicControl.music-progress;
 
-                            changed(value) => {
-                                root.set-timestamp(value);
-                            }
-                            released => {
-                                self.clear-focus();
-                            }
+                            changed(value) => MusicControl.set-timestamp(value);
+                            released => self.clear-focus();
                         }
 
                         Text {
-                            text: root.final-timestamp;
+                            text: MusicControl.final-timestamp;
                             color: DraculaTheme.foreground;
                             font-size: 12px;
                             vertical-alignment: center;
@@ -159,18 +144,14 @@ export component AppWindow inherits Window {
                     alignment: end;
                     spacing: 12px;
 
-                    Button {
-                        icon: Icons.files;
-                        clicked => {
-                            root.file-picker()
-                        }
+                    IconButton {
+                        icon: Icons.music;
+                        clicked => MusicControl.pick-music();
                     }
 
-                    Button {
-                        icon: root.repeat-mode == "Track" ? Icons.repeat_one : root.repeat-mode == "Playlist" ? Icons.repeat_on : Icons.repeat_off;
-                        clicked => {
-                            root.toggle-repeat()
-                        }
+                    IconButton {
+                        icon: Icons.music_folder;
+                        clicked => MusicControl.pick-folder();
                     }
                 }
             }

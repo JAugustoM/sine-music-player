@@ -92,6 +92,8 @@ impl AudioEngine {
                             break;
                         }
 
+                        self.status.error = None;
+
                         thread::sleep(Duration::from_millis(50));
                     }
                     Err(mpsc::TryRecvError::Disconnected) => break,
@@ -103,6 +105,7 @@ impl AudioEngine {
     fn handle_command(&mut self, command: PlayerCommands) {
         match command {
             PlayerCommands::Add(path) => self.add_music(path),
+            PlayerCommands::AddFolder(path) => self.add_folder(path),
             PlayerCommands::Clear => self.clear_music(),
             PlayerCommands::ToggleReproduction => self.toggle_reproduction(),
             PlayerCommands::ToggleRepeat => self.toggle_repeat(),
