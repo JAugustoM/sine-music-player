@@ -11,10 +11,10 @@ pub fn setup_callbacks(sender: Sender<PlayerCommands>, main_window: &AppWindow) 
         tx.send(PlayerCommands::ToggleReproduction).unwrap();
     });
 
-    let tx = sender.clone();
-    main_window.on_clear_clicked(move || {
-        tx.send(PlayerCommands::Clear).unwrap();
-    });
+    // let tx = sender.clone();
+    // main_window.on_clear_clicked(move || {
+    //     tx.send(PlayerCommands::Clear).unwrap();
+    // });
 
     let tx = sender.clone();
     main_window.on_previous_button(move || {

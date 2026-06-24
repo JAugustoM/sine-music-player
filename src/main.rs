@@ -1,14 +1,15 @@
 mod audio_engine;
 mod callbacks;
+mod helpers;
 
 use audio_engine::AudioEngine;
-use audio_engine::engine_enums::*;
+use audio_engine::engine_enums::EngineState;
+use callbacks::setup_callbacks;
+use helpers::{heavy_extract, light_extract};
 
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
-
-use crate::callbacks::setup_callbacks;
 
 slint::include_modules!();
 
@@ -30,6 +31,9 @@ fn main() -> Result<(), slint::PlatformError> {
     let app = main_window.as_weak();
 
     thread::spawn(move || {
+        let mut last_track_index: Option<usize> = None;
+        let mut was_empty = true;
+
         loop {
             let mut latest_status = None;
 
@@ -38,54 +42,63 @@ fn main() -> Result<(), slint::PlatformError> {
             }
 
             if let Some(status) = latest_status {
-                if let Some(error) = status.error {
+                if let Some(error) = &status.error {
                     println!("{error}");
                 }
 
                 let app_clone = app.clone();
 
-                let state_str = match status.state {
-                    EngineState::Empty => "No music on queue",
-                    EngineState::Paused => "Paused",
-                    EngineState::Playing => "Playing",
+                let is_empty = matches!(status.state, EngineState::Empty);
+                let track_changed =
+                    last_track_index != Some(status.current_track) || (was_empty && !is_empty);
+
+                last_track_index = Some(status.current_track);
+                was_empty = is_empty;
+
+                let heavy_extract = if track_changed && !is_empty {
+                    Some(heavy_extract(&status))
+                } else {
+                    None
                 };
 
-                let current_track = status.current_track;
-
-                let (duration, song_details) = match status.playlist.get(current_track) {
-                    None => {
-                        (0, "".to_string())
-                    }
-                    Some(data) => {
-                        (data.length.as_secs(), format!("{} - {} - {}", data.title.clone(), data.album.clone(), data.album_artist.clone()))
-                    }
-                };
-
-                let (time_secs, time_str) = status.timestamp.map_or((0.0, "0:00".to_string()), |t| {
-                    let secs = t.as_secs_f32();
-                    (secs, format!("{}:{:02}", secs as i32 / 60, secs as i32 % 60))
-                });
-
-                let duration_str = format!("{}:{:02}", duration / 60, duration % 60);
-
-                let repeat_mode = match status.repeat {
-                    RepeatMode::Off => 0,
-                    RepeatMode::Track => 1,
-                    RepeatMode::Playlist => 2,
-                };
+                let extract = light_extract(&status);
 
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(app) = app_clone.upgrade() {
-                        app.set_current_state(state_str.into());
-                        app.set_current_timestamp(time_str.into());
-                        app.set_music_length(duration_str.into());
+                        app.set_current_state(extract.state.into());
+                        app.set_current_timestamp(extract.timestamp.into());
+                        app.set_music_progress(extract.music_progress);
+                        app.set_repeat_mode(extract.repeat.into());
 
-                        app.set_song_details(song_details.into());
+                        if track_changed {
+                            if let Some(metadata) = heavy_extract {
+                                app.set_final_timestamp(metadata.final_timestamp.into());
 
-                        app.set_music_progress(time_secs);
-                        app.set_music_duration(duration as i32);
+                                app.set_music_title(metadata.music_title.into());
+                                app.set_music_album(metadata.music_album.into());
+                                app.set_music_album_artist(metadata.music_album_artist.into());
 
-                        app.set_repeat_mode(repeat_mode);
+                                app.set_music_duration(metadata.music_duration);
+
+                                if let Some(buffer) = metadata.cover {
+                                    app.set_cover_art(slint::Image::from_rgba8(buffer));
+                                } else {
+                                    let empty_buffer =
+                                        slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(1, 1);
+                                    app.set_cover_art(slint::Image::from_rgba8(empty_buffer));
+                                }
+                            } else if is_empty {
+                                app.set_music_title("None".into());
+                                app.set_music_album("None".into());
+                                app.set_music_album_artist("None".into());
+                                app.set_music_duration(0.0);
+                                app.set_final_timestamp("0:00".into());
+
+                                let empty =
+                                    slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(1, 1);
+                                app.set_cover_art(slint::Image::from_rgba8(empty));
+                            }
+                        }
                     }
                 });
             }
