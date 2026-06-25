@@ -57,7 +57,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   meta = {
     description = "A music player made with Rust + Slint";
     homepage = "https://github.com/JAugustoM/sine-music-player";
-    license = lib.licenses.unlicense;
+    license = lib.licenses.gpl3Only;
     maintainers = [ ];
   };
 })
