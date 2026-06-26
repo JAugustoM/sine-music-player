@@ -9,12 +9,15 @@ export global MusicControl {
     in-out property <float> music-progress: 0;
     in property <float> music-duration: 0;
     in property <string> repeat-mode: "Off";
+    in property <bool> shuffle-mode: false;
     in property <image> cover-art;
 
     callback toggle-clicked();
+    callback clear-clicked();
     callback previous-button();
     callback next-button();
     callback toggle-repeat();
+    callback toggle-shuffle();
     callback set-timestamp(float);
 
     callback pick-music();

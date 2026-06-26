@@ -15,7 +15,15 @@ impl AudioEngine {
         &self.status.repeat
     }
 
+    pub fn shuffle(&self) -> &ShuffleMode {
+        &self.status.shuffle
+    }
+
     pub fn playlist(&self) -> &Vec<Music> {
         &self.status.playlist
+    }
+
+    pub fn playlist_order(&self) -> &Vec<usize> {
+        &self.status.playlist_order
     }
 }

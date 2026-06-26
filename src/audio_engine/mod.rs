@@ -109,6 +109,7 @@ impl AudioEngine {
             PlayerCommands::Clear => self.clear_music(),
             PlayerCommands::ToggleReproduction => self.toggle_reproduction(),
             PlayerCommands::ToggleRepeat => self.toggle_repeat(),
+            PlayerCommands::ToggleShuffle => self.toggle_shuffle(),
             PlayerCommands::SkipPrevious => self.skip_previous(),
             PlayerCommands::SkipNext => self.skip_next(),
             PlayerCommands::Seek(duration) => self.seek(duration),

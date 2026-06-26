@@ -28,12 +28,10 @@ export component AppWindow inherits Window {
             HorizontalBox {
                 alignment: space-between;
                 padding: 0px;
-                spacing: 24px;
+                // spacing: 24px;
 
                 HorizontalLayout {
-                    horizontal-stretch: 1;
-                    max-width: 300px;
-                    min-width: 200px;
+                    width: parent.width * 0.2;
                     spacing: 16px;
                     alignment: start;
 
@@ -73,7 +71,7 @@ export component AppWindow inherits Window {
                 }
 
                 VerticalLayout {
-                    horizontal-stretch: 2;
+                    width: parent.width * 0.5;
                     alignment: center;
                     spacing: 8px;
 
@@ -82,7 +80,8 @@ export component AppWindow inherits Window {
                         spacing: 16px;
 
                         IconButton {
-                            icon: Icons.shuffle_off;
+                            icon: MusicControl.shuffle-mode ? Icons.shuffle_on : Icons.shuffle_off;
+                            clicked => MusicControl.toggle-shuffle();
                         }
 
                         IconButton {
@@ -138,11 +137,14 @@ export component AppWindow inherits Window {
                 }
 
                 HorizontalLayout {
-                    horizontal-stretch: 1;
-                    max-width: 300px;
-                    min-width: 200px;
+                    width: parent.width * 0.2;
                     alignment: end;
                     spacing: 12px;
+
+                    IconButton {
+                        icon: Icons.clear;
+                        clicked => MusicControl.clear-clicked();
+                    }
 
                     IconButton {
                         icon: Icons.music;

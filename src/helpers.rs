@@ -1,5 +1,7 @@
 use slint::{Rgba8Pixel, SharedPixelBuffer};
 
+use crate::audio_engine::engine_enums::ShuffleMode;
+
 use super::audio_engine::engine_enums::{EngineState, RepeatMode};
 use super::audio_engine::engine_status::EngineStatus;
 
@@ -19,6 +21,7 @@ pub struct LightExtracted {
     pub timestamp: String,
     pub music_progress: f32,
     pub repeat: String,
+    pub shuffle: bool,
 }
 
 pub struct HeavyExtracted {
@@ -53,16 +56,23 @@ pub fn light_extract(status: &EngineStatus) -> LightExtracted {
     }
     .to_string();
 
+    let shuffle = match status.shuffle {
+        ShuffleMode::Off => false,
+        ShuffleMode::On => true,
+    };
+
     LightExtracted {
         music_progress,
         timestamp,
         state,
         repeat,
+        shuffle,
     }
 }
 
 pub fn heavy_extract(status: &EngineStatus) -> HeavyExtracted {
-    let current_track = status.current_track;
+    let current_index = status.current_track;
+    let current_track = status.playlist_order[current_index];
 
     let mut music_duration = 0.0;
     let mut music_title = String::from("");

@@ -51,9 +51,10 @@ fn main() -> Result<(), slint::PlatformError> {
 
                 let app_clone = app.clone();
 
-                let is_empty = matches!(status.state, EngineState::Empty);
-                let track_changed =
-                    last_track_index != Some(status.current_track) || (was_empty && !is_empty);
+                let is_empty = status.state == EngineState::Empty;
+                let track_changed = last_track_index != Some(status.current_track)
+                    || (was_empty && !is_empty)
+                    || (!was_empty && is_empty);
 
                 last_track_index = Some(status.current_track);
                 was_empty = is_empty;
@@ -74,9 +75,19 @@ fn main() -> Result<(), slint::PlatformError> {
                         state.set_current_timestamp(extract.timestamp.into());
                         state.set_music_progress(extract.music_progress);
                         state.set_repeat_mode(extract.repeat.into());
+                        state.set_shuffle_mode(extract.shuffle);
 
                         if track_changed {
-                            if let Some(metadata) = heavy_extract {
+                            if is_empty {
+                                state.set_music_title("None".into());
+                                state.set_music_album("None".into());
+                                state.set_music_album_artist("None".into());
+                                state.set_music_duration(0.0);
+                                state.set_final_timestamp("0:00".into());
+
+                                let empty = SharedPixelBuffer::<Rgba8Pixel>::new(1, 1);
+                                state.set_cover_art(Image::from_rgba8(empty));
+                            } else if let Some(metadata) = heavy_extract {
                                 state.set_final_timestamp(metadata.final_timestamp.into());
 
                                 state.set_music_title(metadata.music_title.into());
@@ -91,15 +102,6 @@ fn main() -> Result<(), slint::PlatformError> {
                                     let empty_buffer = SharedPixelBuffer::<Rgba8Pixel>::new(1, 1);
                                     state.set_cover_art(Image::from_rgba8(empty_buffer));
                                 }
-                            } else if is_empty {
-                                state.set_music_title("None".into());
-                                state.set_music_album("None".into());
-                                state.set_music_album_artist("None".into());
-                                state.set_music_duration(0.0);
-                                state.set_final_timestamp("0:00".into());
-
-                                let empty = SharedPixelBuffer::<Rgba8Pixel>::new(1, 1);
-                                state.set_cover_art(Image::from_rgba8(empty));
                             }
                         }
                     }

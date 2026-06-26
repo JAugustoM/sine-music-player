@@ -4,6 +4,7 @@ pub enum PlayerCommands {
     Clear,
     ToggleReproduction,
     ToggleRepeat,
+    ToggleShuffle,
     SkipNext,
     SkipPrevious,
     Seek(std::time::Duration),
@@ -21,4 +22,10 @@ pub enum RepeatMode {
     Off,
     Track,
     Playlist,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub enum ShuffleMode {
+    Off,
+    On,
 }

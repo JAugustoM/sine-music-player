@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Context;
+use rand::seq::SliceRandom;
 use rodio::Decoder;
 use walkdir::{DirEntry, WalkDir};
 
@@ -37,6 +38,10 @@ impl AudioEngine {
         };
 
         self.status.playlist.push(music);
+
+        let playlist_len = self.playlist().len();
+
+        self.status.playlist_order.push(playlist_len - 1);
 
         if *self.state() == EngineState::Empty {
             self.play_music();
@@ -81,10 +86,33 @@ impl AudioEngine {
         }
     }
 
+    pub fn toggle_shuffle(&mut self) {
+        match self.status.shuffle {
+            ShuffleMode::Off => {
+                let mut rng = rand::rng();
+                let current_track = self.status.current_track;
+
+                self.status.playlist_order.swap(current_track, 0);
+                self.status.current_track = 0;
+                self.status.playlist_order[1..].shuffle(&mut rng);
+                self.status.shuffle = ShuffleMode::On;
+            }
+            ShuffleMode::On => {
+                let current_track = self.status.current_track;
+                let current_index = self.status.playlist_order[current_track];
+
+                self.status.playlist_order = (0..self.playlist().len()).collect();
+                self.status.current_track = current_index;
+                self.status.shuffle = ShuffleMode::Off;
+            }
+        }
+    }
+
     pub fn play_music(&mut self) {
         let index = self.status.current_track;
+        let music_index = self.status.playlist_order[index];
 
-        let music = &self.status.playlist[index];
+        let music = &self.status.playlist[music_index];
 
         let source = match self.load_file(&music.path) {
             Ok(s) => s,

@@ -14,10 +14,10 @@ pub fn setup_callbacks(sender: Sender<PlayerCommands>, main_window: &AppWindow) 
         tx.send(PlayerCommands::ToggleReproduction).unwrap();
     });
 
-    // let tx = sender.clone();
-    // main_window.on_clear_clicked(move || {
-    //     tx.send(PlayerCommands::Clear).unwrap();
-    // });
+    let tx = sender.clone();
+    control.on_clear_clicked(move || {
+        tx.send(PlayerCommands::Clear).unwrap();
+    });
 
     let tx = sender.clone();
     control.on_previous_button(move || {
@@ -68,5 +68,10 @@ pub fn setup_callbacks(sender: Sender<PlayerCommands>, main_window: &AppWindow) 
     let tx = sender.clone();
     control.on_toggle_repeat(move || {
         tx.send(PlayerCommands::ToggleRepeat).unwrap();
+    });
+
+    let tx = sender.clone();
+    control.on_toggle_shuffle(move || {
+        tx.send(PlayerCommands::ToggleShuffle).unwrap();
     });
 }
